@@ -13,7 +13,7 @@ Bring your own data or let it generate synthetic training data automatically.
 ## Installation
 
 ```bash
-pip install -e .
+pip install tinylmtune
 ```
 
 ## Quick Start
