@@ -1,6 +1,51 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+ 
+[project]
+name = "tinylmtune"
+version = "0.0.3"
+description = "A lightweight Python library that automates TinyBERT fine-tuning with Genetic Algorithm hyperparameter optimisation"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Manish Agrawal", email = "manishagrawal.datascience@gmail.com" },
+    { name = "Priyanka Chakraborty", email = "priyanka08993@gmail.com" }
 ]
-build-backend = "setuptools.build_meta"
+keywords = ["tinybert", "fine-tuning", "genetic-algorithm", "nlp", "transformers", "hyperparameter-optimization"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=2.0",
+    "transformers>=4.30",
+    "datasets>=2.0",
+    "scikit-learn>=1.3",
+    "numpy>=1.24",
+    "sentencepiece>=0.1.99",
+    "matplotlib>=3.7",
+]
+ 
+[project.optional-dependencies]
+dev = ["pytest", "twine", "build"]
+ 
+[project.urls]
+Homepage = "https://github.com/manishagrawal-datascience/TinyLMTune"
+Repository = "https://github.com/manishagrawal-datascience/TinyLMTune"
+"Bug Tracker" = "https://github.com/manishagrawal-datascience/TinyLMTune/issues"
+ 
+[tool.setuptools.packages.find]
+where = ["src"]                  # ← look inside src/ folder
+ 
+[tool.setuptools.package-data]
+tinylmtune = ["*.py"]
