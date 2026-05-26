@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Models & data (too large for git)
+*.bin
+*.safetensors
+*.pt
+*.pth
+corpus.jsonl
+ga_log.csv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Outputs
+tiny_model/
+models/
+plots/
+tmp_trainer/
