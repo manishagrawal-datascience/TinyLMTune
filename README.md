@@ -2,7 +2,13 @@
 
 **Genetic-Algorithm-Optimised TinyBERT Fine-Tuning in one function call.**
 
-tinyLMTune automates the full pipeline: dataset building → GA hyperparameter search → TinyBERT fine-tuning → model export. Bring your own data or let it generate synthetic training data automatically.
+tinyLMTune automates the full pipeline: 
+(1) dataset building  
+(2) GA hyperparameter search 
+(3) TinyBERT fine-tuning 
+(4) model export 
+
+Bring your own data or let it generate synthetic training data automatically.
 
 ## Installation
 
