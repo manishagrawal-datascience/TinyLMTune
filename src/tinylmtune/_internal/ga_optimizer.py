@@ -1,14 +1,3 @@
-"""
-Genetic Algorithm optimiser for TinyBERT hyperparameters.
-
-Captures full history for visualization:
-    history = [
-        {"generation": 1, "individual": 0, "fitness": 0.82, "learning_rate": 3e-5, ...},
-        {"generation": 1, "individual": 1, "fitness": 0.75, "learning_rate": 1e-4, ...},
-        ...
-    ]
-"""
-
 import logging
 import random
 from copy import deepcopy
@@ -109,10 +98,6 @@ def _fitness(
 
 
 class TinyOptimizer:
-    """
-    GA-based hyperparameter optimiser for TinyBERT fine-tuning.
-    Captures full history of every individual across all generations.
-    """
 
     def __init__(
         self,
@@ -144,7 +129,7 @@ class TinyOptimizer:
         mutation_rate: float = 0.25,
         elitism: int = 1,
     ) -> tuple[dict, float]:
-        """Run the GA. Results stored in self.history and self.generation_stats."""
+        
         pop_size = max(pop_size, 4)
         population = [_random_individual(self._search_space) for _ in range(pop_size)]
 
@@ -160,7 +145,7 @@ class TinyOptimizer:
                              self._meta)
                 scores.append((ind, f))
 
-                # Record every individual
+                
                 record = {
                     "generation": gen + 1,
                     "individual": idx,
@@ -192,7 +177,7 @@ class TinyOptimizer:
                 gen_stat["avg_fitness"], gen_stat["worst_fitness"],
             )
 
-            # Selection
+            
             next_pop = [deepcopy(scores[i][0]) for i in range(elitism)]
             while len(next_pop) < pop_size:
                 a = min(random.sample(range(len(scores)), 3), key=lambda i: -scores[i][1])
