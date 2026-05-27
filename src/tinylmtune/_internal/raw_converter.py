@@ -1,10 +1,3 @@
-"""
-Raw text converter: takes plain strings and produces structured records.
-
-Uses a local HuggingFace model (Flan-T5) for labelling — no Ollama needed.
-For generation/summarization, uses heuristics (no LLM needed at all).
-"""
-
 import json
 import logging
 import re
@@ -15,10 +8,6 @@ from tinylmtune._internal.llm_backend import generate_text, generate_batch, unlo
 
 logger = logging.getLogger(__name__)
 
-
-# ---------------------------------------------------------------------------
-# Splitting helpers
-# ---------------------------------------------------------------------------
 
 def _split_block(text: str, strategy: str = "sentence") -> list[str]:
     text = clean_text(text)
@@ -40,12 +29,8 @@ def _load_txt_file(path: str | Path) -> str:
     return p.read_text(encoding="utf-8")
 
 
-# ---------------------------------------------------------------------------
-# Heuristic converters (no LLM needed)
-# ---------------------------------------------------------------------------
-
 def _simple_generation_split(texts: list[str]) -> list[dict]:
-    """Split each text into prompt/completion pairs."""
+    
     records = []
     for t in texts:
         words = t.split()
@@ -60,7 +45,7 @@ def _simple_generation_split(texts: list[str]) -> list[dict]:
 
 
 def _simple_summarization_split(texts: list[str]) -> list[dict]:
-    """Use first half as summary of the full text."""
+    
     records = []
     for t in texts:
         words = t.split()
@@ -74,16 +59,12 @@ def _simple_summarization_split(texts: list[str]) -> list[dict]:
     return records
 
 
-# ---------------------------------------------------------------------------
-# LLM-based labelling (using Flan-T5)
-# ---------------------------------------------------------------------------
-
 def _label_classification(
     texts: list[str],
     labels: str | None = None,
     llm_model: str = "google/flan-t5-small",
 ) -> list[dict]:
-    """Classify each text using Flan-T5."""
+    
     label_list = [l.strip() for l in (labels or "positive,negative").split(",")]
     label_str = ", ".join(label_list)
 
@@ -114,7 +95,7 @@ def _label_qna(
     texts: list[str],
     llm_model: str = "google/flan-t5-small",
 ) -> list[dict]:
-    """Generate Q&A pairs from texts using Flan-T5."""
+    
     prompts = [
         f"Generate a question that this text answers. "
         f"Reply with only the question.\nText: {t}"
@@ -134,7 +115,7 @@ def _label_ner(
     texts: list[str],
     llm_model: str = "google/flan-t5-small",
 ) -> list[dict]:
-    """Extract entities from text using Flan-T5."""
+    
     records = []
     for text in texts:
         prompt = (
@@ -170,10 +151,6 @@ def _label_ner(
     return records
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
 def convert_raw_text(
     raw_input: str | list[str],
     task: str,
@@ -185,32 +162,7 @@ def convert_raw_text(
     use_ollama: bool = True,
     ollama_model: str = "mistral",
 ) -> list[dict]:
-    """
-    Convert raw text into structured records for tinyLMTune training.
-
-    Uses a local HuggingFace model (Flan-T5) for labelling.
-    No Ollama or external servers needed.
-
-    Parameters
-    ----------
-    raw_input : str | list[str]
-        Text block, list of strings, or path to .txt file.
-    task : str
-        classification | summarization | qna | generation | ner
-    labels : str | None
-        Comma-separated labels for classification.
-    split_strategy : str
-        "sentence" | "paragraph" | "line"
-    use_llm : bool
-        If True, use Flan-T5 for labelling. If False, use heuristics
-        (works for generation and summarization only).
-    llm_model : str
-        HuggingFace model name (default: google/flan-t5-small).
-
-    Returns
-    -------
-    list[dict] — structured records.
-    """
+    
     # ── Resolve input into list[str] ─────────────────────────────────
     if isinstance(raw_input, list):
         texts = [clean_text(t) for t in raw_input if isinstance(t, str)]
@@ -233,7 +185,7 @@ def convert_raw_text(
     logger.info("Converted raw input → %d text chunks", len(texts))
 
     # ── Convert to structured records ────────────────────────────────
-    # Tasks that can use heuristics (no LLM)
+    
     if task == "generation":
         records = _simple_generation_split(texts)
     elif task == "summarization" and not use_llm:
@@ -255,7 +207,7 @@ def convert_raw_text(
     else:
         raise ValueError(f"Unknown task: {task}")
 
-    # Free GPU memory for training
+    
     unload_model(llm_model)
 
     if not records:
