@@ -1,13 +1,3 @@
-"""
-Synthetic corpus generation using a local HuggingFace model (Flan-T5).
-No Ollama or external servers needed.
-
-Strategy for small models (flan-t5-small/base):
-  - Use simple, focused prompts — one instruction per call
-  - For complex tasks (QnA, NER), use multi-step generation
-  - Never ask the model to produce structured formats (JSON, multi-field)
-"""
-
 import json
 import logging
 import re
@@ -117,7 +107,7 @@ def _generate_qna_example(topic: str, llm_model: str) -> dict | None:
 
     # Verify the answer (or a close match) appears in the context
     if answer.lower() not in context.lower():
-        # Try to find the best substring match
+        
         words = answer.split()
         for length in range(len(words), 0, -1):
             for start in range(len(words) - length + 1):
@@ -129,7 +119,7 @@ def _generate_qna_example(topic: str, llm_model: str) -> dict | None:
                 continue
             break
         else:
-            # Last resort: take first noun phrase from context as answer
+            
             context_words = context.split()
             if len(context_words) >= 3:
                 answer = " ".join(context_words[:3])
@@ -140,8 +130,6 @@ def _generate_qna_example(topic: str, llm_model: str) -> dict | None:
 
 
 def _generate_summarization_example(topic: str, llm_model: str) -> dict | None:
-    """Generate summarization in 2 steps: text → summary."""
-    # Step 1: Generate text
     text = generate_text(
         _SINGLE_PROMPTS["summarization_text"].format(topic=topic),
         model_name=llm_model, max_new_tokens=150,
@@ -150,7 +138,6 @@ def _generate_summarization_example(topic: str, llm_model: str) -> dict | None:
     if len(text) < 30:
         return None
 
-    # Step 2: Generate summary of that text
     summary = generate_text(
         _SINGLE_PROMPTS["summarization_summary"].format(text=text),
         model_name=llm_model, max_new_tokens=60,
@@ -164,8 +151,7 @@ def _generate_summarization_example(topic: str, llm_model: str) -> dict | None:
     return {"text": text, "summary": summary}
 
 
-def _generate_ner_example(topic: str, llm_model: str) -> dict | None:
-    """Generate NER: sentence → extract entities via heuristics."""
+def _generate_ner_example(topic: str, llm_model: str) -> dict | None
     text = generate_text(
         _SINGLE_PROMPTS["ner_sentence"].format(topic=topic),
         model_name=llm_model, max_new_tokens=80,
@@ -182,8 +168,6 @@ def _generate_ner_example(topic: str, llm_model: str) -> dict | None:
     return {"text": text, "entities": entities}
 
 
-# ── Main entry point ──────────────────────────────────────────────
-
 def generate_corpus(
     task: str,
     topic: str = "general knowledge",
@@ -192,31 +176,7 @@ def generate_corpus(
     output_path: str = "corpus.jsonl",
     llm_model: str = "google/flan-t5-small",
 ) -> Path:
-    """
-    Generate a synthetic training corpus using a HuggingFace model.
-
-    Uses multi-step generation for complex tasks (QnA, summarization, NER)
-    to work reliably with small models like flan-t5-small.
-
-    Parameters
-    ----------
-    task : str
-        classification | summarization | qna | generation | ner
-    topic : str
-        Topic hint for generation.
-    n_examples : int
-        Number of examples to generate.
-    labels : str | None
-        Comma-separated labels for classification.
-    output_path : str
-        Where to save the JSONL file.
-    llm_model : str
-        HuggingFace model name (default: google/flan-t5-small).
-
-    Returns
-    -------
-    Path to the generated JSONL file.
-    """
+    
     if task not in ("classification", "summarization", "qna", "generation", "ner"):
         raise ValueError(f"Unknown task '{task}'")
 
