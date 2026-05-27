@@ -1,7 +1,3 @@
-"""
-Inference: load a saved tinyLMTune model and run predictions.
-"""
-
 import json
 import logging
 from pathlib import Path
@@ -21,7 +17,7 @@ def save_best_model(
     output_dir: str,
     best_config: dict,
 ):
-    """Save the trained model, tokenizer, and metadata."""
+    
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
@@ -34,15 +30,6 @@ def save_best_model(
 
 
 class TinyInference:
-    """
-    Load a tinyLMTune-trained model and run predictions.
-
-    Usage:
-        from tinylmtune import TinyInference
-
-        model = TinyInference("my_model")
-        print(model.predict("This movie was fantastic!"))
-    """
 
     def __init__(self, model_dir: str):
         self._dir = Path(model_dir)
@@ -62,7 +49,7 @@ class TinyInference:
         logger.info("Loaded %s model from %s", self.task, self._dir)
 
     def predict(self, text: str, **kwargs) -> dict:
-        """Run inference on a single text input."""
+        
         dispatch = {
             "classification": self._predict_classification,
             "summarization":  self._predict_masked,
@@ -106,10 +93,8 @@ class TinyInference:
             out = self._model(**enc)
         start = int(torch.argmax(out.start_logits, dim=-1))
         end = int(torch.argmax(out.end_logits, dim=-1))
-
-        # Fix invalid spans: if end < start, search for best valid (start, end) pair
+        
         if end < start:
-            # Get top-k candidates and find best valid pair
             start_logits = out.start_logits.squeeze()
             end_logits = out.end_logits.squeeze()
             best_score = float("-inf")
