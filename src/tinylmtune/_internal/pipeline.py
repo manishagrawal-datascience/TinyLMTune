@@ -1,16 +1,6 @@
-"""
-pipeline.py — Single entry-point for the full tinyLMTune pipeline.
-
-Three upgrades over the original:
-    1. Token analysis → data-driven max_len (GA optimises it)
-    2. Search space recommendation based on task + dataset size
-    3. Smart input: structured dicts, raw text, file path — auto-detected
-"""
-
 import logging
 import os
 from pathlib import Path
-
 from tinylmtune._internal.corpus_gen import generate_corpus
 from tinylmtune._internal.dataset import build_dataset, _validate_records, _format_example, _load_jsonl
 from tinylmtune._internal.ga_optimizer import TinyOptimizer
@@ -22,7 +12,6 @@ from tinylmtune._internal.trainer import train_and_evaluate
 
 logger = logging.getLogger(__name__)
 
-
 def _detect_and_resolve_data(
     user_data,
     task: str,
@@ -30,11 +19,8 @@ def _detect_and_resolve_data(
     split_strategy: str,
     llm_model: str,
 ) -> list[dict]:
-    """
-    Auto-detect user_data shape and convert to structured list[dict].
-    Uses Flan-T5 for labelling when needed.
-    """
-    # ── str: text block or .txt file path ────────────────────────────
+   
+    
     if isinstance(user_data, str):
         logger.info("user_data is a string — treating as raw text")
         return convert_raw_text(
@@ -50,7 +36,7 @@ def _detect_and_resolve_data(
 
     first = user_data[0]
 
-    # ── list[str]: raw sentences ─────────────────────────────────────
+    
     if isinstance(first, str):
         logger.info("user_data is list[str] (%d items) — converting via Flan-T5", len(user_data))
         return convert_raw_text(
@@ -59,7 +45,7 @@ def _detect_and_resolve_data(
             
         )
 
-    # ── list[dict]: try structured validation ────────────────────────
+    
     if isinstance(first, dict):
         try:
             valid = _validate_records(user_data, task)
@@ -112,38 +98,8 @@ def optimize_slm(
     output_dir: str | None = None,
     corpus_path: str | None = None,
 ) -> dict:
-    """
-    Full pipeline: resolve data → token analysis → recommend search space
-    → GA-optimise TinyBERT → save best model.
-
-    Parameters
-    ----------
-    task : str
-        classification | summarization | qna | generation | ner
-    user_data : list[dict] | list[str] | str | None
-        Training data in any form:
-            - list[dict] with correct keys → used directly
-            - list[dict] with wrong keys → text extracted, labelled via Flan-T5
-            - list[str] → raw sentences, labelled via Flan-T5
-            - str (text block) → split + labelled via Flan-T5
-            - str (.txt path) → loaded + split + labelled
-            - None → falls back to corpus_path or synthetic generation
-    llm_model : str
-        HuggingFace model for data generation/labelling.
-        Default: "google/flan-t5-small". For better quality use
-        "google/flan-t5-base" or "google/flan-t5-large".
-    search_space : dict | None
-        Custom GA search ranges. Merged on top of auto-recommended values.
-    max_len : int
-        Fallback max_len if token analysis can't run (default 128).
-    output_dir : str | None
-        Where to save. Defaults to ./tiny_model in CWD.
-
-    Returns
-    -------
-    dict — best config with fitness, max_len, ga_history, and output_dir.
-    """
-    # ── Resolve output dir ───────────────────────────────────────────
+    
+   
     if output_dir is None:
         output_dir = os.path.join(os.getcwd(), "tiny_model")
     elif not os.path.isabs(output_dir):
@@ -151,7 +107,7 @@ def optimize_slm(
     os.makedirs(output_dir, exist_ok=True)
     logger.info("Model will be saved to: %s", output_dir)
 
-    # ── Step 1: resolve data ─────────────────────────────────────────
+    
     _user_data = None
     _corpus_path = None
 
@@ -173,7 +129,7 @@ def optimize_slm(
             llm_model=llm_model,
         )
 
-    # ── Step 2: get raw records ──────────────────────────────────────
+    
     if _user_data is not None:
         raw_records = _user_data
     elif _corpus_path is not None:
@@ -181,7 +137,7 @@ def optimize_slm(
     else:
         raise RuntimeError("No data resolved")
 
-    # ── Step 3: token analysis → fix max_len (UPGRADE 1) ─────────────
+    
     token_profile = analyze_token_lengths(raw_records, task)
     fixed_max_len = token_profile["recommended_max_len"]
     logger.info(
@@ -190,7 +146,6 @@ def optimize_slm(
         token_profile["max"], fixed_max_len,
     )
 
-    # ── Step 4: build dataset with fixed max_len ─────────────────────
     train_ds, val_ds, tokenizer, meta = build_dataset(
         task=task, user_data=raw_records, max_len=fixed_max_len,
     )
@@ -198,14 +153,14 @@ def optimize_slm(
     n_train = len(train_ds)
     logger.info("Task=%s, num_labels=%d, n_train=%d", task, num_labels, n_train)
 
-    # ── Step 5: search space recommendation (UPGRADE 2) ──────────────
+    
     recommended = recommend_search_space(
         n_samples=n_train, task=task, max_len=fixed_max_len,
     )
-    # Remove max_len from search space — it's fixed, not searched
+    
     recommended.pop("max_len", None)
 
-    # Merge user overrides on top
+    
     if search_space:
         search_space.pop("max_len", None)  # ignore if user passed it
         recommended.update(search_space)
@@ -213,7 +168,7 @@ def optimize_slm(
     logger.info("Fixed max_len=%d | GA search space (%d params): %s",
                 fixed_max_len, len(recommended), list(recommended.keys()))
 
-    # ── Step 6: GA optimisation (11 params, fixed max_len) ───────────
+    
     optimizer = TinyOptimizer(
         train_ds=train_ds,
         val_ds=val_ds,
@@ -231,11 +186,11 @@ def optimize_slm(
     )
     logger.info("Best config (fitness=%.4f): %s", best_fitness, best_config)
 
-    # Capture GA history for visualization
+    
     ga_history = optimizer.history
     ga_generation_stats = optimizer.generation_stats
 
-    # ── Step 7: retrain with best config & save ──────────────────────
+    
     result = train_and_evaluate(
         train_ds=train_ds, val_ds=val_ds,
         task=task, num_labels=num_labels,
