@@ -10,17 +10,14 @@ def clean_text(text: str) -> str:
     """Normalise and clean raw text for TinyBERT tokenisation."""
     if not isinstance(text, str):
         return ""
-    # Unicode normalise
+    
     text = unicodedata.normalize("NFKC", text)
-    # Collapse whitespace
     text = re.sub(r"\s+", " ", text).strip()
-    # Remove control characters (keep newlines/tabs for structure)
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
     return text
 
 
 def truncate_text(text: str, max_words: int = 256) -> str:
-    """Truncate text to roughly *max_words* words."""
     words = text.split()
     if len(words) <= max_words:
         return text
