@@ -1,16 +1,3 @@
-"""
-Token length analyzer: profiles user data through the TinyBERT tokenizer
-to determine the optimal max_len value.
-
-Instead of guessing max_len=128, this module tokenizes a sample of the
-data WITHOUT truncation and picks max_len based on real percentiles:
-
-    p50  — covers half the data (fast, some truncation)
-    p75  — covers most data (good balance)
-    p95  — covers nearly all (minimal truncation)
-    p100 — covers everything (no truncation, slowest)
-"""
-
 import logging
 import math
 from collections import Counter
@@ -21,15 +8,15 @@ from tinylmtune._internal.constants import TINYBERT_MODEL
 
 logger = logging.getLogger(__name__)
 
-# TinyBERT absolute max
+
 _MODEL_MAX_LEN = 512
 
-# Snap to GPU-friendly sizes
+
 _STANDARD_LENGTHS = [2, 4, 8, 16, 24, 32, 64, 96, 128, 192, 256, 384, 512]
 
 
 def _snap_up(value: int) -> int:
-    """Round up to the nearest standard length."""
+    
     for std in _STANDARD_LENGTHS:
         if std >= value:
             return std
@@ -37,7 +24,7 @@ def _snap_up(value: int) -> int:
 
 
 def _extract_texts(records: list[dict], task: str) -> list[str]:
-    """Pull the text field(s) from records based on task."""
+   
     texts = []
     for rec in records:
         if task == "qna":
@@ -60,13 +47,7 @@ def analyze_token_lengths(
     task: str,
     model_name: str = TINYBERT_MODEL,
 ) -> dict:
-    """
-    Tokenize data and return a length profile with recommendations.
-
-    Returns dict with:
-        min, max, mean, median, p50, p75, p90, p95, p100,
-        truncation_pct, recommended_max_len (int), recommended_ga_choices (list)
-    """
+    
     texts = _extract_texts(records, task)
     if not texts:
         logger.warning("No texts to analyze — using default max_len=128")
@@ -74,7 +55,7 @@ def analyze_token_lengths(
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    # Tokenize WITHOUT truncation to get true lengths
+    
     lengths = []
     for t in texts:
         tokens = tokenizer(t, truncation=False, padding=False)
@@ -100,21 +81,19 @@ def analyze_token_lengths(
         "p100": lengths[-1],
     }
 
-    # Truncation percentages at standard lengths
+    
     truncation = {}
     for std in _STANDARD_LENGTHS:
         trunc_count = sum(1 for l in lengths if l > std)
         truncation[std] = round(trunc_count / n * 100, 1)
     profile["truncation_pct"] = truncation
 
-    # ── Pick the best fixed max_len ─────────────────────────────────────
-    # Use p95: covers 95% of data, good balance of speed vs coverage
+    
     recommended = _snap_up(profile["p95"])
     recommended = min(recommended, _MODEL_MAX_LEN)
     profile["recommended_max_len"] = recommended
 
-    # ── Pick GA search choices ──────────────────────────────────────────
-    # 3-4 data-driven values spanning the useful range
+   
     candidates = set()
     candidates.add(_snap_up(profile["p75"]))
     candidates.add(_snap_up(profile["p95"]))
@@ -147,13 +126,7 @@ def print_token_analysis(
     task: str,
     model_name: str = TINYBERT_MODEL,
 ) -> dict:
-    """
-    Print a human-readable token length report. Call before optimize_slm().
-
-    Usage:
-        from tinylmtune import print_token_analysis
-        print_token_analysis(my_data, task="classification")
-    """
+    
     p = analyze_token_lengths(records, task, model_name)
 
     print("=" * 60)
