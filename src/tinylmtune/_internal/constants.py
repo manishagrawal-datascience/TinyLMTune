@@ -1,7 +1,3 @@
-"""
-Shared constants for tinyLMTune internals.
-"""
-
 from transformers import (
     AutoModelForMaskedLM,
     AutoModelForQuestionAnswering,
