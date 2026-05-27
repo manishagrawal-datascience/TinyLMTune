@@ -1,7 +1,3 @@
-"""
-Dataset builder: JSONL / list[dict] → tokenised HuggingFace Dataset.
-"""
-
 import json
 import logging
 from pathlib import Path
@@ -107,7 +103,7 @@ def _tokenise_qna(records, tokenizer, max_len):
             skipped += 1
             continue
 
-        # Find answer position in context
+        
         if ans_start_char is None:
             ans_start_char = context.lower().find(ans_text.lower())
         if ans_start_char is None or ans_start_char == -1:
@@ -120,13 +116,13 @@ def _tokenise_qna(records, tokenizer, max_len):
 
         ans_end_char = ans_start_char + len(ans_text)
 
-        # Tokenize with offset mapping
+        
         enc = tokenizer(question, context, truncation=True, padding="max_length",
                         max_length=max_len, return_offsets_mapping=True)
         offsets = enc.pop("offset_mapping")
         input_ids = enc["input_ids"]
 
-        # Find context start token (after question + [SEP])
+       
         sep_id = tokenizer.sep_token_id
         ctx_start_tok = 1  # after [CLS]
         for idx, tid in enumerate(input_ids):
@@ -134,7 +130,7 @@ def _tokenise_qna(records, tokenizer, max_len):
                 ctx_start_tok = idx + 1
                 break
 
-        # Map char offsets → token positions
+        
         start_tok, end_tok = 0, 0
         for idx in range(ctx_start_tok, len(offsets)):
             tok_s, tok_e = offsets[idx]
@@ -166,7 +162,7 @@ def _tokenise_qna(records, tokenizer, max_len):
 
 
 def _tokenise_ner(records, tokenizer, max_len):
-    """Encode text with BIO entity labels aligned to subword tokens."""
+    
     NER_LABELS = ["O", "B-PER", "I-PER", "B-ORG", "I-ORG",
                   "B-LOC", "I-LOC", "B-MISC", "I-MISC"]
     label2id = {l: i for i, l in enumerate(NER_LABELS)}
@@ -181,13 +177,13 @@ def _tokenise_ner(records, tokenizer, max_len):
         input_ids = enc["input_ids"]
         label_ids = [-100] * len(input_ids)  # ignore special tokens by default
 
-        # Mark non-special, non-padding tokens as "O"
+        
         for idx, (os_, oe_) in enumerate(offsets):
             if os_ == 0 and oe_ == 0:
                 continue  # [CLS], [SEP], [PAD]
             label_ids[idx] = label2id["O"]
 
-        # Map entities to token positions
+        
         for ent in entities:
             ent_start = ent.get("start", -1)
             ent_end = ent.get("end", -1)
@@ -291,12 +287,7 @@ def build_dataset(
     model_name: str = TINYBERT_MODEL,
     labels: str | None = None,
 ) -> tuple[Dataset, Dataset, AutoTokenizer, dict]:
-    """
-    Build train/val HuggingFace Datasets.
-
-    Returns (train_dataset, val_dataset, tokenizer, meta)
-    where meta contains label2id/id2label for classification.
-    """
+    
     if user_data is not None:
         if not isinstance(user_data, list):
             raise TypeError(
