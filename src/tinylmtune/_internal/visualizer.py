@@ -1,27 +1,9 @@
-"""
-GA result visualization for tinyLMTune.
-
-Provides 5 plot types:
-    1. Fitness over generations (best/avg/worst)
-    2. Parameter-fitness scatter for each hyperparameter
-    3. Best config comparison across generations
-    4. Population heatmap (parameter values colored by fitness)
-    5. Full summary dashboard
-
-Usage:
-    from tinylmtune import optimize_slm
-    from tinylmtune.visualizer import plot_results
-
-    best = optimize_slm(task="classification", user_data=my_data)
-    plot_results(best)  # generates all plots
-"""
-
 import logging
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# Task → metric display name
+
 _METRIC_NAMES = {
     "classification": "F1 Score",
     "summarization":  "Inverse Loss",
@@ -30,14 +12,14 @@ _METRIC_NAMES = {
     "ner":            "Token F1",
 }
 
-# Numeric params (for scatter plots)
+
 _NUMERIC_PARAMS = [
     "learning_rate", "batch_size", "epochs", "warmup_ratio", "weight_decay",
     "dropout", "attention_dropout", "gradient_accumulation_steps",
     "label_smoothing", "max_grad_norm",
 ]
 
-# String params (for box plots)
+
 _CATEGORICAL_PARAMS = ["lr_scheduler_type"]
 
 
@@ -55,10 +37,7 @@ def _ensure_matplotlib():
 
 
 def plot_fitness_over_generations(generation_stats, task="classification", save_path=None):
-    """
-    Plot 1: Fitness (best/avg/worst) across GA generations.
-    Shows convergence and whether the GA is improving.
-    """
+    
     plt = _ensure_matplotlib()
 
     gens = [s["generation"] for s in generation_stats]
@@ -75,7 +54,7 @@ def plot_fitness_over_generations(generation_stats, task="classification", save_
 
     ax.fill_between(gens, worsts, bests, alpha=0.1, color="blue")
 
-    # Annotate best point
+    
     max_fit = max(bests)
     max_gen = gens[bests.index(max_fit)]
     ax.annotate(
@@ -100,10 +79,7 @@ def plot_fitness_over_generations(generation_stats, task="classification", save_
 
 
 def plot_parameter_scatter(history, task="classification", save_path=None):
-    """
-    Plot 2: Scatter plot of each parameter vs fitness.
-    Different marker shape per generation. Best individual = red star.
-    """
+   
     plt = _ensure_matplotlib()
     import numpy as np
 
@@ -127,7 +103,7 @@ def plot_parameter_scatter(history, task="classification", save_path=None):
     fitnesses = [h["fitness"] for h in history]
     best_idx = fitnesses.index(max(fitnesses))
 
-    # Marker shapes and colors per generation
+    
     _MARKERS = ["o", "s", "D", "^", "v", "P", "X", "h", "<", ">"]
     _COLORS = [
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
@@ -157,7 +133,7 @@ def plot_parameter_scatter(history, task="classification", save_path=None):
                 label=f"Gen {gen}",
             )
 
-        # Highlight best individual
+        
         ax.scatter(
             [vals[best_idx]], [fitnesses[best_idx]],
             c="red", s=250, marker="*", zorder=5,
@@ -173,11 +149,11 @@ def plot_parameter_scatter(history, task="classification", save_path=None):
         if param == "learning_rate":
             ax.set_xscale("log")
 
-        # Only show legend on first subplot to avoid clutter
+        
         if i == 0:
             ax.legend(fontsize=7, loc="lower right", ncol=2)
 
-    # Hide unused subplots
+    
     for j in range(i + 1, len(axes)):
         axes[j].set_visible(False)
 
@@ -190,9 +166,7 @@ def plot_parameter_scatter(history, task="classification", save_path=None):
 
 
 def plot_scheduler_comparison(history, task="classification", save_path=None):
-    """
-    Plot 3: Box plot of fitness by lr_scheduler_type.
-    """
+    
     plt = _ensure_matplotlib()
 
     if "lr_scheduler_type" not in history[0]:
@@ -200,7 +174,7 @@ def plot_scheduler_comparison(history, task="classification", save_path=None):
 
     metric_name = _METRIC_NAMES.get(task, "Fitness")
 
-    # Group fitness by scheduler
+    
     scheduler_fitness = {}
     for h in history:
         sched = h["lr_scheduler_type"]
@@ -217,7 +191,7 @@ def plot_scheduler_comparison(history, task="classification", save_path=None):
         patch.set_facecolor(color)
         patch.set_alpha(0.6)
 
-    # Mark best scheduler
+    
     means = [sum(d) / len(d) for d in data]
     best_idx = means.index(max(means))
     bp["boxes"][best_idx].set_edgecolor("red")
@@ -235,22 +209,13 @@ def plot_scheduler_comparison(history, task="classification", save_path=None):
 
 
 def plot_best_config_evolution(generation_stats, history=None, task="classification", save_path=None):
-    """
-    Plot 4: Parameter range vs fitness, with a separate line per generation.
-
-    X-axis: parameter value
-    Y-axis: fitness (metric)
-    Each generation is a separate colored line connecting its individuals.
-
-    Requires `history` (list of all individual records) for full data.
-    Falls back to generation_stats best configs if history not provided.
-    """
+   
     plt = _ensure_matplotlib()
     import numpy as np
 
     metric_name = _METRIC_NAMES.get(task, "Fitness")
 
-    # Need full history for this plot
+    
     if not history:
         logger.warning("plot_best_config_evolution needs 'history' for per-generation lines. "
                         "Pass results['ga_history'].")
@@ -278,7 +243,7 @@ def plot_best_config_evolution(generation_stats, history=None, task="classificat
     else:
         axes = axes.flatten() if hasattr(axes, "flatten") else [axes]
 
-    # Find the overall best individual
+    
     all_fitnesses = [h["fitness"] for h in history]
     best_idx = all_fitnesses.index(max(all_fitnesses))
     best_record = history[best_idx]
@@ -306,7 +271,7 @@ def plot_best_config_evolution(generation_stats, history=None, task="classificat
                 label=f"Gen {gen}",
             )
 
-        # Highlight best overall
+        
         ax.scatter(
             [best_record[param]], [best_record["fitness"]],
             c="red", s=250, marker="*", zorder=10,
@@ -340,10 +305,7 @@ def plot_best_config_evolution(generation_stats, history=None, task="classificat
 
 
 def plot_population_heatmap(history, generation=None, task="classification", save_path=None):
-    """
-    Plot 5: Heatmap of normalized parameter values per individual, colored by fitness.
-    Shows one generation (default: last).
-    """
+    
     plt = _ensure_matplotlib()
     import numpy as np
 
@@ -357,7 +319,7 @@ def plot_population_heatmap(history, generation=None, task="classification", sav
     metric_name = _METRIC_NAMES.get(task, "Fitness")
     params = [p for p in _NUMERIC_PARAMS if p in gen_data[0]]
 
-    # Build matrix: rows=individuals, cols=params (normalized 0-1)
+    
     matrix = []
     fitnesses = []
     for h in gen_data:
@@ -366,14 +328,14 @@ def plot_population_heatmap(history, generation=None, task="classification", sav
         fitnesses.append(h["fitness"])
 
     matrix = np.array(matrix, dtype=float)
-    # Normalize each column to 0-1
+    
     col_min = matrix.min(axis=0)
     col_max = matrix.max(axis=0)
     col_range = col_max - col_min
     col_range[col_range == 0] = 1
     norm_matrix = (matrix - col_min) / col_range
 
-    # Sort by fitness (best on top)
+    
     sort_idx = np.argsort(fitnesses)[::-1]
     norm_matrix = norm_matrix[sort_idx]
     sorted_fit = [fitnesses[i] for i in sort_idx]
@@ -386,11 +348,11 @@ def plot_population_heatmap(history, generation=None, task="classification", sav
     ax.set_yticks(range(len(gen_data)))
     ax.set_yticklabels([f"#{i+1} (fit={f:.4f})" for i, f in enumerate(sorted_fit)], fontsize=9)
 
-    # Highlight best individual
+   
     ax.get_yticklabels()[0].set_fontweight("bold")
     ax.get_yticklabels()[0].set_color("green")
 
-    # Add actual values as text
+    
     for i in range(norm_matrix.shape[0]):
         for j in range(norm_matrix.shape[1]):
             orig_idx = sort_idx[i]
@@ -412,25 +374,7 @@ def plot_population_heatmap(history, generation=None, task="classification", sav
 
 
 def plot_results(results: dict, task: str = None, save_dir: str = None, show: bool = True):
-    """
-    Generate all 5 plots from optimize_slm() results.
-
-    Parameters
-    ----------
-    results : dict
-        The dict returned by optimize_slm(). Must contain
-        "ga_history" and "ga_generation_stats" keys.
-    task : str
-        Task name. Auto-detected from results if not provided.
-    save_dir : str | None
-        Directory to save plots as PNG files. None = don't save.
-    show : bool
-        Whether to call plt.show() (set False in scripts).
-
-    Returns
-    -------
-    dict of {plot_name: matplotlib.Figure}
-    """
+    
     plt = _ensure_matplotlib()
 
     history = results.get("ga_history", [])
@@ -449,19 +393,19 @@ def plot_results(results: dict, task: str = None, save_dir: str = None, show: bo
 
     figs = {}
 
-    # Plot 1: Fitness over generations
+    
     if gen_stats:
         figs["fitness_progress"] = plot_fitness_over_generations(
             gen_stats, task, save_path=_save("01_fitness_progress"),
         )
 
-    # Plot 2: Parameter scatter
+    
     if history:
         figs["parameter_scatter"] = plot_parameter_scatter(
             history, task, save_path=_save("02_parameter_scatter"),
         )
 
-    # Plot 3: Scheduler comparison
+    
     if history and "lr_scheduler_type" in history[0]:
         fig = plot_scheduler_comparison(
             history, task, save_path=_save("03_scheduler_comparison"),
@@ -469,14 +413,14 @@ def plot_results(results: dict, task: str = None, save_dir: str = None, show: bo
         if fig:
             figs["scheduler_comparison"] = fig
 
-    # Plot 4: Config evolution (param range vs fitness, per generation)
+    
     if history:
         figs["config_evolution"] = plot_best_config_evolution(
             gen_stats, history=history, task=task,
             save_path=_save("04_config_evolution"),
         )
 
-    # Plot 5: Population heatmap (last generation)
+    
     if history:
         figs["population_heatmap"] = plot_population_heatmap(
             history, task=task, save_path=_save("05_population_heatmap"),
@@ -490,7 +434,7 @@ def plot_results(results: dict, task: str = None, save_dir: str = None, show: bo
 
 
 def print_best_config_table(results: dict):
-    """Print a formatted table of the best configuration found."""
+   
     task = results.get("task", "classification")
     metric_name = _METRIC_NAMES.get(task, "Fitness")
 
