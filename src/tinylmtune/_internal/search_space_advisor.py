@@ -1,8 +1,3 @@
-"""
-Search space advisor: recommends GA hyperparameter ranges based on
-task type and dataset size for all 11 parameters.
-"""
-
 import logging
 from copy import deepcopy
 
@@ -16,12 +11,7 @@ def recommend_search_space(
     task: str,
     max_len: int = 128,
 ) -> dict:
-    """
-    Recommend a search space for all 11 GA parameters.
-
-    Adapts ranges based on dataset size — small datasets get more
-    regularisation, larger LR ranges, more epochs.
-    """
+    
     rec = deepcopy(GA_SEARCH_SPACE)
 
     # ── Learning rate ─────────────────────────────────────────────
@@ -101,10 +91,7 @@ def print_recommendation(
     max_len: int = 128,
     user_overrides: dict | None = None,
 ) -> dict:
-    """
-    Print a human-readable search space recommendation.
-    Call before optimize_slm() to sanity-check your setup.
-    """
+    
     rec = recommend_search_space(n_samples, task, max_len)
 
     print("=" * 65)
