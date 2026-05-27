@@ -1,8 +1,3 @@
-"""
-Training loop: wraps HuggingFace Trainer for TinyBERT fine-tuning.
-Supports all 11 GA-optimised hyperparameters.
-"""
-
 import logging
 
 import numpy as np
@@ -30,7 +25,7 @@ def _compute_metrics(eval_pred):
 
 
 def _compute_qna_metrics(eval_pred):
-    """Compute exact-match accuracy for QnA start/end positions."""
+    
     (start_logits, end_logits), (start_true, end_true) = eval_pred
     start_pred = np.argmax(start_logits, axis=-1)
     end_pred = np.argmax(end_logits, axis=-1)
@@ -45,7 +40,7 @@ def _compute_qna_metrics(eval_pred):
 
 
 def _compute_ner_metrics(eval_pred):
-    """Compute token-level F1 for NER (ignoring -100 padding)."""
+    
     logits, labels = eval_pred
     preds = np.argmax(logits, axis=-1)
     # Flatten and filter out -100 (ignored tokens)
@@ -81,7 +76,7 @@ def train_and_evaluate(
     label2id: dict | None = None,
     id2label: dict | None = None,
 ) -> dict:
-    """Fine-tune TinyBERT with all 11 optimisable hyperparameters."""
+    
     model = build_model(
         task=task, num_labels=num_labels,
         label2id=label2id, id2label=id2label,
@@ -89,7 +84,7 @@ def train_and_evaluate(
         attention_dropout=attention_dropout,
     )
 
-    # QnA: disable label smoothing (breaks span loss) and use exact_match metric
+    
     effective_label_smoothing = 0.0 if task == "qna" else label_smoothing
 
     if task == "classification":
